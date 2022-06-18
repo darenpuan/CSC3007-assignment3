@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assignment 3</title>
+    <link rel="stylesheet" href="assets/index.css" />
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+  </head>
+  <body>
+    <svg></svg>
+    <div class="tooltip"></div>
+
+    <script>
+      function titleCase(str) {
+        str = str.toLowerCase().split(" ");
+        for (var i = 0; i < str.length; i++) {
+          str[i] = str[i].charAt(0).toUpperCase() + str[i].slice(1);
+        }
+        return str.join(" ");
+      }
+
+      let width = 1000,
+        height = 1000;
+
+      let svg = d3.select("svg").attr("viewBox", "0 0 " + width + " " + height);
+
+      Promise.all([
+        d3.json("assets/sgmap.json"),
+        d3.csv("assets/population2021.csv"),
+      ]).then((data) => {
+        popData = [];
+        var maxPop;
+
+        data[0].features.forEach((map) => {
+          data[1].forEach((pop) => {
+            if (
+              map.properties.Name.toUpperCase() == pop.Subzone.toUpperCase()
+            ) {
+              popData[map.properties.Name] = pop.Population;
+            }
+            maxPop = Math.max(pop.Population);
+          });
+        });
+
+        function split(left, right, parts) {
+          var result = [],
+            delta = (right - left) / (parts - 1);
+          while (left < right) {
+            result.push(Math.round(left));
+            left += delta;
+          }
+          result.push(Math.round(right));
+          return result;
+        }
+
+        result = split(0, maxPop, 11);
+
+        var colorScale = d3
+          .scaleThreshold()
+          .domain(result)
+          .range([
+            "#DDEAE8",
+            "#D2E3E2",
+            "#C7DCDC",
+            "#BDD2D6",
+            "#B2C8CF",
+            "#A7BEC8",
+            "#9DB2C1",
+            "#92A6BA",
+            "#728D95",
+            "#53706F",
+            "#354944",
+          ]);
+
+        var legend = d3
+          .legendColor()
+          .scale(colorScale)
+          .shapeWidth(60)
+          .labels(result)
+          .orient("horizontal")
+          .title("Population Count");
+
+        var projection = d3
+          .geoMercator()
+          .center([103.851959, 1.29027])
+          .fitExtent(
+            [
+              [20, 20],
+              [980, 580],
+            ],
+            data[0]
+          );
+
+        let geopath = d3.geoPath().projection(projection);
+
+        svg
+          .append("g")
+          .attr("id", "districts")
+          .selectAll("path")
+          .data(data[0].features)
+          .enter()
+          .append("path")
+          .attr("d", (d) => geopath(d))
+          .attr("d", geopath)
+          .attr("fill", function (d) {
+            d.total = popData[d.properties.Name] || 0;
+            return colorScale(d.total);
+          })
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 2)
+          .on("mouseover", (event, d) => {
+            d3.select(".tooltip")
+              .text(
+                titleCase(d.properties.Name) +
+                  ", Population: " +
+                  popData[d.properties.Name]
+              )
+              .style("left", event.pageX + "px")
+              .style("top", event.pageY + "px");
+          })
+          .on("mouseout", (event, d) => {
+            d3.select(".tooltip").text("");
+          });
+
+        svg.append("g").attr("transform", "translate(20,600)").call(legend);
+      });
+    </script>
+  </body>
+</html>
