@@ -24,8 +24,8 @@
         return str.join(" ");
       }
 
-      let width = 1000,
-        height = 1000;
+      let width = window.innerWidth,
+        height = window.innerHeight;
 
       let svg = d3.select("svg").attr("viewBox", "0 0 " + width + " " + height);
 
