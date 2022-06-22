@@ -1,6 +1,11 @@
-.tooltip {
+.tooltips {
     position: absolute;
-    background: #fff;
-    padding: 10px;
+     background: #fff;
+    /* padding: 10px; */
   }
   
+h2{
+  text-align: center;
+  margin: 20px 0;
+}
+
